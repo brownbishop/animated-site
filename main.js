@@ -15,6 +15,9 @@ renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize( window.innerWidth, window.innerHeight );
 camera.position.set(-3, 0, 30);
 
+if (camera.position.x < 120)
+    console.log('camera can\'t be passed as a parameter');
+
 const textureLoader = new THREE.TextureLoader();
 
 // create light
@@ -46,8 +49,11 @@ const moon = new THREE.Mesh(
 scene.add(moon);
 moon.position.set(-5, 0, 30);
 
+// add profiler for the addStar function
+
 // stars
 function addStar() {
+    console.time();
     const geometry = new THREE.SphereGeometry(0.25, 24, 24);
     const material = new THREE.MeshStandardMaterial({
         color: 0xffffff,
@@ -61,30 +67,43 @@ function addStar() {
 
     star.position.set(x, y, z);
     scene.add(star);
+    console.timeEnd();
 }
 
+// efficient for loop
+// faster than map
 for (let i = 0; i <= 200; i++) {
     addStar();
 }
 
 // cube
+const spaceShipMaterial = new THREE.MeshPhysicalMaterial({
+    map: textureLoader.load('texture/Sci-fi_Floor_001_basecolor.jpg'),
+    aoMap: textureLoader.load('texture/Sci-fi_Floor_001_ambientOcclusion.jpg'),
+    normalMap: textureLoader.load('texture/Sci-fi_Floor_001_normal.jpg'),
+    emissiveMap: textureLoader.load('texture/Sci-fi_Floor_001_emission.jpg'),
+    metalnessMap: textureLoader.load('texture/Sci-fi_Floor_001_metallic.jpg'),
+    roughnessMap: textureLoader.load('texture/Sci-fi_Floor_001_roughness.jpg'),
+    displacementMap: textureLoader.load('texture/Sci-fi_Floor_001_height.jpg'),
+});
 
 const cube = new THREE.Mesh(
     new THREE.BoxGeometry(10, 10, 10),
-    new THREE.MeshPhysicalMaterial({
-        map: textureLoader.load('texture/Sci-fi_Floor_001_basecolor.jpg'),
-        aoMap: textureLoader.load('texture/Sci-fi_Floor_001_ambientOcclusion.jpg'),
-        normalMap: textureLoader.load('texture/Sci-fi_Floor_001_normal.jpg'),
-        emissiveMap: textureLoader.load('texture/Sci-fi_Floor_001_emission.jpg'),
-        metalnessMap: textureLoader.load('texture/Sci-fi_Floor_001_metallic.jpg'),
-        roughnessMap: textureLoader.load('texture/Sci-fi_Floor_001_roughness.jpg'),
-        displacementMap: textureLoader.load('texture/Sci-fi_Floor_001_height.jpg'),
-    })
+    spaceShipMaterial
 );
 
 cube.position.set(10, 10, 0);
 
 scene.add(cube);
+
+const torus = new THREE.Mesh(
+    new THREE.TorusGeometry(12, 4),
+    spaceShipMaterial
+);
+
+torus.position.set(0, -10, -5);
+
+scene.add(torus);
 
 // background
 
@@ -106,8 +125,12 @@ function moveCamera() {
 
 document.body.onscroll = moveCamera;
 
+let angle = 0;
+
 // render loop
 function animate() {
+    angle += 0.01;
+
     requestAnimationFrame(animate);
 
     moon.rotation.x += 0.005;
@@ -116,10 +139,11 @@ function animate() {
     cube.rotation.y -= 0.005;
     cube.rotation.z += 0.005;
 
-    cube.position.x += 0.005;
+    torus.rotation.x -= 0.005;
+    torus.rotation.y -= 0.05;
 
-    if (cube.position.x >= 10)
-        cube.position.x = -5;
+    cube.position.x = torus.position.x + (25 * Math.cos(angle));
+    cube.position.y = torus.position.y + (25 * Math.sin(angle));
 
     controls.update();
     renderer.render(scene, camera);
